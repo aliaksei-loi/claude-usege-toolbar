@@ -55,7 +55,6 @@ struct MenuBarView: View {
                         title: "Sonnet only",
                         resetLabel: formatReset(sonnet.resetsAt),
                         utilization: sonnet.utilization,
-                        showInfoIcon: true
                     )
                 }
             }
@@ -93,7 +92,8 @@ struct MenuBarView: View {
                         .fill(Color.primary.opacity(0.08))
                     RoundedRectangle(cornerRadius: 4)
                         .fill(barColor(utilization))
-                        .frame(width: max(geo.size.width * utilization / 100, utilization > 0 ? 6 : 0))
+                        .frame(
+                            width: max(geo.size.width * utilization / 100, utilization > 0 ? 6 : 0))
                 }
             }
             .frame(height: 8)
@@ -145,12 +145,10 @@ struct MenuBarView: View {
     private func footer(usage: UsageLimits?) -> some View {
         HStack {
             if let usage {
-                Text("Last updated: \(usage.fetchedAt.formatted(.relative(presentation: .named)))")
+                Text("Last updated: \(relativeTime(usage.fetchedAt))")
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
             }
-
-            Spacer()
 
             Button(action: { Task { await appState.refresh() } }) {
                 Image(systemName: "arrow.clockwise")
@@ -159,6 +157,8 @@ struct MenuBarView: View {
             }
             .buttonStyle(.borderless)
             .disabled(appState.isLoading)
+
+            Spacer()
 
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
@@ -171,6 +171,15 @@ struct MenuBarView: View {
 
     // MARK: - Helpers
 
+    private func relativeTime(_ date: Date) -> String {
+        let seconds = Int(Date().timeIntervalSince(date))
+        if seconds < 60 { return "just now" }
+        let minutes = seconds / 60
+        if minutes < 60 { return "\(minutes)m ago" }
+        let hours = minutes / 60
+        return "\(hours)h ago"
+    }
+
     private func barColor(_ utilization: Double) -> Color {
         if utilization < 50 { return .blue }
         if utilization < 80 { return .yellow }
@@ -182,13 +191,18 @@ struct MenuBarView: View {
         let diff = date.timeIntervalSinceNow
         guard diff > 0 else { return "Resetting..." }
 
-        let hours = Int(diff) / 3600
-        let minutes = (Int(diff) % 3600) / 60
+        let totalMinutes = Int(diff) / 60
+        let days = totalMinutes / 1440
+        let hours = (totalMinutes % 1440) / 60
+        let minutes = totalMinutes % 60
 
-        if hours > 0 {
-            return "Resets in \(hours) hr \(minutes) min"
+        if days > 0 {
+            return "Resets in \(days)d \(hours)h"
         }
-        return "Resets in \(minutes) min"
+        if hours > 0 {
+            return "Resets in \(hours)h \(minutes)m"
+        }
+        return "Resets in \(minutes)m"
     }
 
     private func formatWeeklyReset(_ date: Date?) -> String {
@@ -199,6 +213,7 @@ struct MenuBarView: View {
         // If more than 24h away, show day + time
         if diff > 86400 {
             let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US")
             formatter.dateFormat = "EEE h:mm a"
             return "Resets \(formatter.string(from: date))"
         }

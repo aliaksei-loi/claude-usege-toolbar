@@ -23,7 +23,8 @@ app: release
 	@cp -r $(BUILD_DIR)/ClaudeToolbar_ClaudeToolbar.bundle "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
 	@cp Info.plist "$(APP_DIR)/Contents/"
 	@echo "APPL????" > "$(APP_DIR)/Contents/PkgInfo"
-	@echo "Built $(APP_DIR)"
+	@codesign --force --sign - --identifier $(BUNDLE_ID) "$(APP_DIR)"
+	@echo "Built and signed $(APP_DIR)"
 
 install: app
 	@cp -r "$(APP_DIR)" /Applications/
