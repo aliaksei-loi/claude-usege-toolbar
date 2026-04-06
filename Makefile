@@ -20,6 +20,7 @@ app: release
 	@mkdir -p "$(APP_DIR)/Contents/MacOS"
 	@mkdir -p "$(APP_DIR)/Contents/Resources"
 	@cp $(BUILD_DIR)/ClaudeToolbar "$(APP_DIR)/Contents/MacOS/"
+	@cp -r $(BUILD_DIR)/ClaudeToolbar_ClaudeToolbar.bundle "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
 	@cp Info.plist "$(APP_DIR)/Contents/"
 	@echo "APPL????" > "$(APP_DIR)/Contents/PkgInfo"
 	@echo "Built $(APP_DIR)"

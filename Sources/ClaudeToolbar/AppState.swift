@@ -4,56 +4,59 @@ import Foundation
 @MainActor
 @Observable
 final class AppState {
-    var usage: UsageData?
+    var usage: UsageLimits?
     var isLoading = false
     var error: String?
-    var apiKey: String = ""
-    var apiKeyInput: String = ""
-    var showSettings = false
     var refreshInterval: TimeInterval = 300 // 5 minutes
 
-    private var api: AnthropicAPI?
+    /// Shown in the menu bar (e.g. "10%")
+    var menuBarTitle: String = "…"
+
+    private let api = UsageLimitsAPI()
     private var refreshTask: Task<Void, Never>?
 
-    private static let apiKeyKey = "anthropic_api_key"
-
     init() {
-        loadAPIKey()
-    }
-
-    func saveAPIKey() {
-        let key = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { return }
-        apiKey = key
-        apiKeyInput = ""
-
-        // Store in UserDefaults (consider Keychain for production)
-        UserDefaults.standard.set(key, forKey: Self.apiKeyKey)
-
-        api = AnthropicAPI(apiKey: key)
-        Task { await refresh() }
-        startAutoRefresh()
-    }
-
-    func clearAPIKey() {
-        apiKey = ""
-        usage = nil
-        error = nil
-        api = nil
-        refreshTask?.cancel()
-        UserDefaults.standard.removeObject(forKey: Self.apiKeyKey)
+        Task {
+            await refresh()
+            startAutoRefresh()
+        }
     }
 
     func refresh() async {
-        guard let api else { return }
-
         isLoading = true
         error = nil
 
+        guard let creds = KeychainReader.readClaudeCredentials() else {
+            error = UsageLimitsError.noCredentials.localizedDescription
+            menuBarTitle = "!"
+            isLoading = false
+            return
+        }
+
         do {
-            usage = try await api.fetchUsage()
+            let limits = try await api.fetch(token: creds.accessToken)
+            usage = limits
+
+            // Show current session % used in menu bar
+            if let session = limits.fiveHour {
+                menuBarTitle = "\(Int(session.utilization))%"
+            } else {
+                menuBarTitle = "0%"
+            }
+        } catch let limitsError as UsageLimitsError {
+            if case .rateLimited(let seconds) = limitsError {
+                // Schedule retry after the rate limit expires
+                scheduleRetry(after: seconds)
+            }
+            if usage == nil {
+                self.error = limitsError.localizedDescription
+                menuBarTitle = "!"
+            }
         } catch {
-            self.error = error.localizedDescription
+            if usage == nil {
+                self.error = error.localizedDescription
+                menuBarTitle = "!"
+            }
         }
 
         isLoading = false
@@ -70,14 +73,14 @@ final class AppState {
         }
     }
 
-    private func loadAPIKey() {
-        if let key = UserDefaults.standard.string(forKey: Self.apiKeyKey), !key.isEmpty {
-            apiKey = key
-            api = AnthropicAPI(apiKey: key)
-            Task {
-                await refresh()
-                startAutoRefresh()
-            }
+    private func scheduleRetry(after seconds: Int) {
+        refreshTask?.cancel()
+        let delay = max(seconds + 5, 60) // wait slightly past the limit
+        refreshTask = Task {
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled else { return }
+            await refresh()
+            startAutoRefresh()
         }
     }
 }

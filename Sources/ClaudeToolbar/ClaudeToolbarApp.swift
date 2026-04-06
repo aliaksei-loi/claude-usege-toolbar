@@ -5,20 +5,20 @@ struct ClaudeToolbarApp: App {
     @State private var appState = AppState()
 
     init() {
-        // Hide from dock — menu bar only
         NSApplication.shared.setActivationPolicy(.accessory)
     }
 
     var body: some Scene {
-        MenuBarExtra("Claude", systemImage: "sparkle") {
+        MenuBarExtra {
             MenuBarView()
                 .environment(appState)
+        } label: {
+            HStack(spacing: 3) {
+                Image("MenuBarIcon", bundle: .module)
+                    .renderingMode(.template)
+                Text(appState.menuBarTitle)
+            }
         }
         .menuBarExtraStyle(.window)
-
-        Settings {
-            SettingsView()
-                .environment(appState)
-        }
     }
 }

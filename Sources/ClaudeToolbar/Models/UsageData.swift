@@ -1,36 +1,39 @@
 import Foundation
 
-struct UsageData: Sendable {
-    var inputTokens: Int
-    var outputTokens: Int
-    var totalCost: Double
-    var requestCount: Int
-    var periodStart: Date
-    var periodEnd: Date
-
-    var totalTokens: Int { inputTokens + outputTokens }
+struct UsageLimits: Sendable {
+    let fiveHour: UsageBucket?
+    let sevenDay: UsageBucket?
+    let sevenDaySonnet: UsageBucket?
+    let fetchedAt: Date
 }
 
-struct DailyUsage: Sendable, Identifiable {
-    let id = UUID()
-    let date: Date
-    let inputTokens: Int
-    let outputTokens: Int
-    let cost: Double
-    let requestCount: Int
+struct UsageBucket: Sendable {
+    let utilization: Double // 0–100 percent used
+    let resetsAt: Date?
+
+    var remainingPercent: Double { max(100 - utilization, 0) }
 }
 
-// MARK: - API Response Types
+// MARK: - API Response
 
-struct OrganizationUsageResponse: Codable, Sendable {
-    let id: String
-    let name: String
-    let totalTokens: Int?
-    let totalCost: Double?
+struct UsageLimitsResponse: Codable, Sendable {
+    let fiveHour: BucketResponse?
+    let sevenDay: BucketResponse?
+    let sevenDaySonnet: BucketResponse?
 
     enum CodingKeys: String, CodingKey {
-        case id, name
-        case totalTokens = "total_tokens"
-        case totalCost = "total_cost"
+        case fiveHour = "five_hour"
+        case sevenDay = "seven_day"
+        case sevenDaySonnet = "seven_day_sonnet"
+    }
+}
+
+struct BucketResponse: Codable, Sendable {
+    let utilization: Double?
+    let resetsAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case utilization
+        case resetsAt = "resets_at"
     }
 }

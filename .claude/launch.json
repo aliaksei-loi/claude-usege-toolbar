@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "swift-run",
+      "runtimeExecutable": "swift",
+      "runtimeArgs": ["run"],
+      "port": null
+    },
+    {
+      "name": "swift-build",
+      "runtimeExecutable": "swift",
+      "runtimeArgs": ["build"],
+      "port": null
+    },
+    {
+      "name": "make-app",
+      "runtimeExecutable": "make",
+      "runtimeArgs": ["app"],
+      "port": null
+    }
+  ]
+}
