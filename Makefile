@@ -21,6 +21,7 @@ app: release
 	@mkdir -p "$(APP_DIR)/Contents/Resources"
 	@cp $(BUILD_DIR)/ClaudeToolbar "$(APP_DIR)/Contents/MacOS/"
 	@cp -r $(BUILD_DIR)/ClaudeToolbar_ClaudeToolbar.bundle "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
+	@cp Sources/ClaudeToolbar/Resources/AppIcon.icns "$(APP_DIR)/Contents/Resources/"
 	@cp Info.plist "$(APP_DIR)/Contents/"
 	@echo "APPL????" > "$(APP_DIR)/Contents/PkgInfo"
 	@codesign --force --sign - --identifier $(BUNDLE_ID) "$(APP_DIR)"

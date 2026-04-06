@@ -13,13 +13,21 @@ final class AppState {
     var menuBarTitle: String = "…"
 
     private let api = UsageLimitsAPI()
-    private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored private var initTask: Task<Void, Never>?
+    @ObservationIgnored private var refreshTask: Task<Void, Never>?
 
     init() {
-        Task {
+        initTask = Task {
             await refresh()
             startAutoRefresh()
         }
+    }
+
+    func shutdown() {
+        initTask?.cancel()
+        refreshTask?.cancel()
+        initTask = nil
+        refreshTask = nil
     }
 
     func refresh() async {

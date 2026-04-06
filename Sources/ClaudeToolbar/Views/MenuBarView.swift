@@ -161,6 +161,7 @@ struct MenuBarView: View {
             Spacer()
 
             Button("Quit") {
+                appState.shutdown()
                 NSApplication.shared.terminate(nil)
             }
             .buttonStyle(.borderless)
